@@ -1,0 +1,105 @@
+<h2>Working with datetime data in pandas</h2>
+<div class="step-text">
+<p>As a data scientist, you might want to create a dataset for your project that has a date and time value or visualize information from your dataset over a period of time. In this topic, you will learn about the basics of working with time-series data in <code class="language-python">pandas</code> , how to convert strings to the datetime type, and how to assemble a date from multiple columns. You will also learn about extracting datetime from various columns and selecting data using a specific year or date range.</p>
+<h5 id="getting-started">Getting started</h5>
+<p>Suppose we have a hotel and we are creating a <code class="language-python">DataFrame</code> with the check-in date and the number of guests that visited the hotel:</p>
+<pre><code class="language-python">import pandas as pd
+import random
+
+df = pd.DataFrame ({'date': ['2022-06-01', '2022-06-02', '2022-06-03'],
+                    'guest': [5, 10, 20]})</code></pre>
+<p>Our <code class="language-python">DataFrame</code> looks like this:</p>
+<pre><code class="language-no-highlight">         date  guest
+0  2022-06-01      5
+1  2022-06-02     10
+2  2022-06-03     20</code></pre>
+<p>Let's check the data type of the hotel <code class="language-python">DataFrame</code> we just created by calling <code class="language-python">df.dtypes</code>:</p>
+<pre><code class="language-python">date     object
+guest     int64
+dtype: object</code></pre>
+<p>We can see that the <code class="language-python">date</code> column is recognized as <code class="language-python">object</code> (a Python object, <code class="language-python">str</code>). We can change the column type with <code class="language-python">pd.to_datetime()</code>:</p>
+<pre><code class="language-python">df['date'] = pd.to_datetime(df['date'])</code></pre>
+<p>Let's run <code class="language-python">df.dtypes</code> once again:</p>
+<pre><code class="language-python">date     datetime64[ns]
+guest             int64
+dtype: object</code></pre>
+<p>You can see the data type for the <code class="language-python">date</code> is<code class="language-python">datetime64[ns]</code> (<code class="language-python">[ns]</code> stands for nanosecond-based time format), which shows that it is now recognized as a <code class="language-python">pandas</code> <code class="language-python">datetime</code> data type.</p>
+<h5 id="datetime-format">Datetime format</h5>
+<p>By default, <code class="language-python">to_datetime()</code> will parse to <code class="language-python">YYYY-MM-DD</code>(everything recognized as a date will be cast to that format). If we want to preserve that the input has the day before the month, <code class="language-python">dayfirst</code> has to be set to <code class="language-python">True</code>:</p>
+<pre><code class="language-python">df = pd.DataFrame({'date': ['7/06/2022', '8/06/2022'], #DD/MM/YYYY format
+                  'guest': [5, 23]})
+df['date'] = pd.to_datetime(df['date'], dayfirst=True)</code></pre>
+<p> This is the <code class="language-python">DataFrame</code> now:</p>
+<pre><code class="language-no-highlight">        date  guest
+0 2022-06-07      5
+1 2022-06-08     23</code></pre>
+<p>When the date is in the <code class="language-python">YY-MM-DD</code> format (such as <code class="language-python">'13/09/12'</code>), there is a similar argument, <code class="language-python">yearfirst</code>, which, if set to <code class="language-python">True</code>, will output<code class="language-python">2013-09-12</code>.</p>
+<p>Imagine we had an update in the check-in system, and we had to log the last guest's arrival time:</p>
+<pre><code class="language-python">df = pd.DataFrame({'date': ['7/06/2022 5:35:00', '8/06/2022 19:45:30'],
+                  'guest': [5, 23]})
+df['date'] = pd.to_datetime(df['date'], format="%d/%m/%Y %H:%M:%S")</code></pre>
+<p>Passing a string of format codes to <code class="language-python">format</code> is the general way to ensure the correct parsing:</p>
+<pre><code class="language-no-highlight">                 date  guest
+0 2022-06-07 05:35:00      5
+1 2022-06-08 19:45:30     23</code></pre>
+<p>If you want to represent the <code class="language-python">datetime</code> dates in a way other than <code class="language-python">YYYY-MM-DD</code>, use the <code class="language-python">dt.strftime()</code>method.</p>
+<p></p><div class="alert alert-warning"> <code class="language-python">dt.strftime()</code> will change the column type to <code class="language-python">object</code>(a Python string) </div>
+<h5 id="assembling-a-date-from-various-columns">Assembling a date from various columns </h5>
+<p>Let's say we have separate columns with the year, month, and day, and want to create a column with the complete date. With the <code class="language-python">to_datetime()</code><strong> </strong>function, you can do that as well:</p>
+<pre><code class="language-python">df = pd.DataFrame({'year': [2015, 2016],
+                   'month': [2, 3],
+                   'day': [4, 5]})
+df['date'] = pd.to_datetime(df)</code></pre>
+<p>The <code class="language-python">DataFrame</code> with an assembled date column now looks like this:</p>
+<pre><code class="language-no-highlight">   year  month  day       date
+0  2015      2    4 2015-02-04
+1  2016      3    5 2016-03-05</code></pre>
+<p>Note that for this method of date assembly to work, the names of the <code class="language-python">DataFrame</code> columns must be common abbreviations ('year', 'month', 'day', and so on) or their plurals.</p>
+<h5 id="extracting-additional-features">Extracting additional features</h5>
+<p>In a situation where we want to get a separate component from the date column, there are several <code class="language-python">DatetimeIndex</code> attributes ranging from <code class="language-python">dt.year</code> to <code class="language-python">dt.nanosecond</code>(or less obvious ones, such as<code class="language-python">dt.dayofweek</code> or <code class="language-python">dt.is_leap_year</code>):</p>
+<pre><code class="language-python">df = pd.DataFrame({'date': ['4/03/2022', '5/03/2022'],
+                  'guest': [16, 19]})
+df['date'] = pd.to_datetime(df['date'], dayfirst=True)
+df['year']= df['date'].dt.year
+df['month']= df['date'].dt.month
+df['day']= df['date'].dt.day</code></pre>
+<p> Our <code class="language-python">DataFrame</code> will be as follows:</p>
+<pre><code class="language-no-highlight">        date  guest  year  month  day
+0 2022-03-04     16  2022      3    4
+1 2022-03-05     19  2022      3    5</code></pre>
+<h5 id="finding-out-the-difference-between-two-dates">Finding out the difference between two dates</h5>
+<p>Getting back to the hotel check-in system, let's say we want to get an insight into how early people are planning their trips at different times of the year. The <code class="language-python">DataFrame</code> looks like this:</p>
+<pre><code class="language-no-highlight">  booking_id        booking_date        checkin_date
+0   eLW3L2p3 2022-07-01 18:29:23 2022-07-16 05:52:51
+1   8qgC2z6q 2022-05-16 15:09:13 2022-02-06 08:01:42
+2   HVoJA4TT 2022-02-15 17:39:10 2022-04-30 02:53:20</code></pre>
+<p>We can obtain the difference between the two dates in various units, let's say the number of days suits the purpose:</p>
+<pre><code class="language-python">df['diff']= (df['checkin_date'] - df['booking_date']).dt.days</code></pre>
+<p> Output:</p>
+<pre><code class="language-no-highlight">  booking_id        booking_date        checkin_date  diff
+0   eLW3L2p3 2022-07-01 18:29:23 2022-07-16 05:52:51    14
+1   8qgC2z6q 2022-05-16 15:09:13 2022-06-02 08:01:42    16
+2   HVoJA4TT 2022-02-15 17:39:10 2022-04-30 02:53:20    73</code></pre>
+<h5 id="filtering-data-within-a-certain-time-range">Filtering data within a certain time range</h5>
+<p>Let's create a synthetic dataset and select the slice over a three-day span. First, we generate the dataset:</p>
+<pre><code class="language-python">df = pd.DataFrame({'guest': random.sample(range(10, 30), 7)})
+df['date'] = pd.date_range(start='2023-01-02', end='2023-01-08')</code></pre>
+<p>Here, we generated a list of guest counts and specified the <code class="language-python">start</code> and the <code class="language-python">end</code> dates for the range. To select the data between two dates with <code class="language-python">.loc</code>, we have to set the index on the <code class="language-python">date</code>column, and provide the start and the end of the range to <code class="language-python">.loc</code>:</p>
+<pre><code class="language-python">df = df.set_index(['date'])
+df.loc['2023-01-05':'2023-01-07']</code></pre>
+<p>That will result in a similar <code class="language-python">DataFrame</code> (ignoring the randomly generated guest counts):</p>
+<pre><code class="language-no-highlight">            guest
+date             
+2023-01-05     28
+2023-01-06     22
+2023-01-07     16</code></pre>
+<p>You can also use a boolean mask with <code class="language-python">.loc</code> to have a slice of the <code class="language-python">DataFrame</code> between the specified dates, but we won't be discussing it in this topic.</p>
+<h5 id="conclusion">Conclusion </h5>
+<ul>
+<li>You can use the <code class="language-python">to_datetime()</code> function to convert a <code class="language-python">DataFrame</code> column to <code class="language-python">pandas</code> <code class="language-python">datetime</code>.</li>
+<li> You can use <code class="language-python">df.loc[...]</code> to either select data between dates or for a specific date.</li>
+<li> <code class="language-python">pd.date_range()</code> helps to create a date sequence.</li>
+<li>To extract the specific <code class="language-python">datetime</code> components, use <code class="language-python">dt.year</code>, <code class="language-python">dt.month</code>, <code class="language-python">dt.day</code> , and so on.</li>
+<li>You can subtract <code class="language-python">datetime</code> columns to get the time interval between two dates</li>
+</ul>
+</div>
